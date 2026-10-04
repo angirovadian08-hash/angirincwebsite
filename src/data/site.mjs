@@ -9,9 +9,9 @@ export const site = {
   // TODO: replace with the real domain once purchased (no trailing slash)
   url: "https://www.angirwelding.com",
 
-  // TODO: real phone number. `phoneDisplay` is shown, `phoneHref` is dialed.
-  phoneDisplay: "(718) 000-0000",
-  phoneHref: "+17180000000",
+  // Phone: `phoneDisplay` is shown, `phoneHref` is dialed.
+  phoneDisplay: "(347) 987-8232",
+  phoneHref: "+13479878232",
   // TODO: real email
   email: "office@angirwelding.com",
 

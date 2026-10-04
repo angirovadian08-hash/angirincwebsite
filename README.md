@@ -25,7 +25,7 @@ To swap in a real photo, save it as a 1600×1000 `.webp` with the **same file na
 
 ## ⚠️ Fill these in before launch — `src/data/site.mjs`
 
-- `phoneDisplay` / `phoneHref` — real phone number (currently a placeholder)
+- `phoneDisplay` / `phoneHref` — phone number (set to (347) 987-8232)
 - `email`
 - `url` — the real domain once purchased
 - `hours` (optional), `social` links, `licensedInsured` / `licenseNumber` (only if true)
