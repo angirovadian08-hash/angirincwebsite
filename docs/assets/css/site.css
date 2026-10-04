@@ -424,3 +424,13 @@ section { padding: clamp(64px, 9vw, 120px) 0; }
   .mobile-bar .btn { padding: .85em; }
   .area-index .map-wrap { aspect-ratio: 4/3; }
 }
+
+/* photography grade — keeps stock photos consistent with the brand */
+.card-img, .svc-hero-img, .split-img, .guide-fig { position: relative; }
+.card-img img, .svc-hero-img img, .split-img img, .guide-fig img { filter: saturate(.88) contrast(1.06); }
+.card-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(12,12,12,0) 55%, rgba(12,12,12,.35)); pointer-events: none; }
+.svc-hero-img img, .split-img img, .guide-fig img { aspect-ratio: 16/10; object-fit: cover; width: 100%; }
+.hero-media img { filter: saturate(.9) contrast(1.08) brightness(.9); }
+.credits { columns: 3; padding: 0; list-style: none; }
+.credits li { padding: 4px 0; }
+@media (max-width: 760px) { .credits { columns: 2; } }

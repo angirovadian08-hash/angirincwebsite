@@ -2,12 +2,12 @@
   "name": "angir-welding-website",
   "version": "1.0.0",
   "private": true,
-  "description": "Angir Welding & Fabrication, Inc. — Brooklyn welding & metal fabrication website (static, SEO-optimized).",
+  "description": "Angir Welding & Fabrication, Inc. \u2014 Brooklyn welding & metal fabrication website (static, SEO-optimized).",
   "type": "module",
   "scripts": {
     "build": "node src/build.mjs",
-    "images": "node src/build-images.mjs",
-    "build:all": "node src/build-images.mjs && node src/build.mjs",
+    "photos": "node scripts/fetch-photos.mjs",
+    "brand": "node src/build-images.mjs",
     "serve": "npx serve docs"
   },
   "devDependencies": {

@@ -12,6 +12,7 @@ import { servicesB } from "./data/services-b.mjs";
 import { servicesC } from "./data/services-c.mjs";
 import { locations } from "./data/locations.mjs";
 import { guides, faqs } from "./data/guides.mjs";
+import { photos } from "./data/photos.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "docs");
@@ -66,8 +67,14 @@ const esc = (t = "") => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").r
 const abs = (p) => site.url + p;
 const tel = `tel:${site.phoneHref}`;
 const addr = `${site.address.street}, ${site.address.city}, ${site.address.region} ${site.address.zip}`;
-const pic = (base, alt, { eager = false, cls = "", sizes = "(max-width: 900px) 100vw, 50vw" } = {}) =>
-  `<img class="${cls}" src="${base}-1200.webp" srcset="${base}-800.webp 800w, ${base}-1200.webp 1200w, ${base}.webp 1600w" sizes="${sizes}" width="1600" height="1000" alt="${esc(alt)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
+const PH = (key) => { const p = photos[key]; if (!p) throw new Error("No photo for " + key); return p; };
+const isLocal = (p) => fs.existsSync(path.join(OUT, "assets/photos", p.file + "-1600.webp"));
+const phUrl = (p, w, h = Math.round(w * 0.625)) => isLocal(p) ? `/assets/photos/${p.file}-${w}.webp` : `${p.raw}?w=${w}&h=${h}&fit=crop&crop=entropy&auto=format&q=75`;
+const ogUrl = (key) => { const p = PH(key); return fs.existsSync(path.join(OUT, "assets/photos/og", p.file + ".jpg")) ? abs(`/assets/photos/og/${p.file}.jpg`) : `${p.raw}?w=1200&h=630&fit=crop&crop=entropy&fm=jpg&q=80`; };
+const pic = (key, alt, { eager = false, cls = "", sizes = "(max-width: 900px) 100vw, 50vw" } = {}) => {
+  const p = PH(key);
+  return `<img class="${cls}" src="${phUrl(p, 1200)}" srcset="${phUrl(p, 800)} 800w, ${phUrl(p, 1200)} 1200w, ${phUrl(p, 1600)} 1600w" sizes="${sizes}" width="1600" height="1000" alt="${esc(alt || p.alt)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
+};
 const stars = `<span class="stars" aria-hidden="true">★★★★★</span>`;
 
 const ICON = {
@@ -180,13 +187,13 @@ function footer() {
       ${col("More areas", [...brooklyn.slice(16).map((l) => [l.name, `/areas/${l.slug}/`]), ...boroughs.map((l) => [l.name, `/areas/${l.slug}/`])])}
       ${col("Company", [["About", "/about/"], ["Guides", "/guides/"], ["FAQ", "/faq/"], ["Contact", "/contact/"], ["Service areas", "/areas/"], ["All services", "/services/"], ...social.map(([k, v]) => [k[0].toUpperCase() + k.slice(1), v])])}
     </div>
-    <div class="f-bottom"><p>© ${YEAR} ${esc(site.legalName)} · ${esc(addr)}${site.licensedInsured ? " · Licensed &amp; insured" : ""}${site.licenseNumber ? ` · License #${esc(site.licenseNumber)}` : ""}</p><p><a href="/privacy/">Privacy</a> · <a href="/sitemap.xml">Sitemap</a></p></div>
+    <div class="f-bottom"><p>© ${YEAR} ${esc(site.legalName)} · ${esc(addr)}${site.licensedInsured ? " · Licensed &amp; insured" : ""}${site.licenseNumber ? ` · License #${esc(site.licenseNumber)}` : ""}</p><p><a href="/privacy/">Privacy</a> · <a href="/credits/">Photo credits</a> · <a href="/sitemap.xml">Sitemap</a></p></div>
   </div>
 </footer>
 <div class="mobile-bar"><a class="btn btn-red" href="${tel}">${ICON.phone} Call now</a><a class="btn btn-dark" href="/contact/">Free quote</a></div>`;
 }
 
-function page({ url, title, desc, body, active = "", og = "home", schema = [], type = "website" }) {
+function page({ url, title, desc, body, active = "", og = "page:hero", schema = [], type = "website" }) {
   const sc = [orgSchema(), ...schema].map((o) => `<script type="application/ld+json">${JSON.stringify(o)}</script>`).join("\n");
   return `<!doctype html>
 <html lang="en-US">
@@ -199,8 +206,8 @@ function page({ url, title, desc, body, active = "", og = "home", schema = [], t
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="theme-color" content="#8d0d0c">
 <meta name="geo.region" content="US-NY"><meta name="geo.placename" content="Brooklyn"><meta name="geo.position" content="${site.address.lat};${site.address.lng}"><meta name="ICBM" content="${site.address.lat}, ${site.address.lng}">
-<meta property="og:type" content="${type}"><meta property="og:site_name" content="${esc(site.name)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${abs(url)}"><meta property="og:image" content="${abs(IMG.og(og))}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="en_US">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${abs(IMG.og(og))}">
+<meta property="og:type" content="${type}"><meta property="og:site_name" content="${esc(site.name)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${abs(url)}"><meta property="og:image" content="${ogUrl(og)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${ogUrl(og)}">
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" href="/assets/brand/logo-mark.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
@@ -224,7 +231,7 @@ const BUILD_V = Date.now().toString(36);
 // ─────────────────────────────────────────────────────────────
 const crumbHtml = (items) => `<nav class="crumbs wrap" aria-label="Breadcrumb"><ol>${items.map(([t, u], i) => i === items.length - 1 ? `<li aria-current="page">${esc(t)}</li>` : `<li><a href="${u}">${esc(t)}</a></li>`).join("")}</ol></nav>`;
 
-const card = (s, h = "h3") => `<a class="card" href="/services/${s.slug}/"><div class="card-img">${pic(IMG.service(s), `${ALT[s.art]} — ${s.name.toLowerCase()} in Brooklyn`, { sizes: "(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw" })}</div><div class="card-b"><${h}>${esc(s.name)}</${h}><p>${esc(s.card)}</p><span class="more">Learn more ${ICON.arrow}</span></div></a>`;
+const card = (s, h = "h3") => `<a class="card" href="/services/${s.slug}/"><div class="card-img">${pic(s.slug, `${PH(s.slug).alt} — ${s.name.toLowerCase()} in Brooklyn`, { sizes: "(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw" })}</div><div class="card-b"><${h}>${esc(s.name)}</${h}><p>${esc(s.card)}</p><span class="more">Learn more ${ICON.arrow}</span></div></a>`;
 
 const faqList = (list) => `<div class="faq-list">${list.map((f, i) => `<details ${i === 0 ? "open" : ""}><summary><span>${esc(f.q)}</span><i aria-hidden="true"></i></summary><div class="faq-a"><p>${esc(f.a)}</p></div></details>`).join("")}</div>`;
 
@@ -266,7 +273,7 @@ const add = (url, html) => pages.push([url, html]);
 
   const body = `
 <section class="hero">
-  <div class="hero-media">${pic(IMG.page("brooklyn-welding-fabrication-hero"), ALT.hero, { eager: true, sizes: "100vw" })}</div>
+  <div class="hero-media">${pic("page:hero", "Welder welding steel — Angir Welding & Fabrication, Brooklyn", { eager: true, sizes: "100vw" })}</div>
   <div class="wrap hero-in">
     <p class="kicker light">Welding &amp; metal fabrication · Brooklyn, NY</p>
     <h1>Brooklyn welding &amp; fabrication, <em>built right.</em></h1>
@@ -298,7 +305,7 @@ const add = (url, html) => pages.push([url, html]);
 </div></section>
 
 <section class="split"><div class="wrap split-in">
-  <div class="split-img">${pic(IMG.page("custom-railing-measurements-brooklyn"), ALT.measure)}</div>
+  <div class="split-img">${pic("page:split", "Metal worker grinding a steel beam — custom metal fabrication in Brooklyn")}</div>
   <div class="split-txt"><p class="kicker">Built for Brooklyn</p><h2>Designed for old buildings and <em>real weather.</em></h2>
     <ul class="ticks">
       <li>${ICON.check}<span><b>Code-height railings and guards</b> designed to NYC Building Code, with tight picket spacing.</span></li>
@@ -331,7 +338,7 @@ ${method(true)}
   <div class="sec-head left"><p class="kicker">FAQ</p><h2>Questions, <em>answered.</em></h2><a class="link" href="/faq/">All FAQs ${ICON.arrow}</a></div>
   ${faqList(faqs.slice(0, 7))}
 </div></section>`;
-  add("/", page({ url: "/", title: "Angir Welding & Fabrication | Brooklyn Welding & Metal Fabrication NYC", desc: "Brooklyn welding & metal fabrication shop in Dyker Heights: custom iron railings, gates, fences, metal stairs, fire escape repair, rolling gates, structural steel & mobile welding across NYC.", body, og: "home", schema: [faqSchema(faqs.slice(0, 7))] }));
+  add("/", page({ url: "/", title: "Angir Welding & Fabrication | Brooklyn Welding & Metal Fabrication NYC", desc: "Brooklyn welding & metal fabrication shop in Dyker Heights: custom iron railings, gates, fences, metal stairs, fire escape repair, rolling gates, structural steel & mobile welding across NYC.", body, og: "page:hero", schema: [faqSchema(faqs.slice(0, 7))] }));
 }
 
 // ── SERVICES INDEX
@@ -341,7 +348,7 @@ ${method(true)}
 <nav class="jump" aria-label="Service categories">${GROUPS.map((g) => `<a href="#${g.id}">${esc(g.name)}</a>`).join("")}</nav></div></section>
 ${GROUPS.map((g, i) => `<section class="svc-index ${i % 2 ? "alt" : ""}" id="${g.id}"><div class="wrap"><div class="sec-head left"><p class="kicker">Part ${g.kicker}</p><h2>${esc(g.name)}</h2><p class="sec-sub">${esc(g.blurb)}</p></div><div class="grid cards">${services.filter((s) => s.group === g.id).map((s) => card(s)).join("")}</div></div></section>`).join("")}
 ${method(true)}`;
-  add("/services/", page({ url: "/services/", title: "Welding & Metal Fabrication Services | Brooklyn & NYC | Angir", desc: "All welding and metal fabrication services from Angir in Brooklyn: railings, stairs, gates, fences, window guards, fire escapes, structural steel, rolling gates, stainless, mobile & emergency welding.", body, active: "services", og: "services", schema: [crumbs([["Home", "/"], ["Services", "/services/"]])] }));
+  add("/services/", page({ url: "/services/", title: "Welding & Metal Fabrication Services | Brooklyn & NYC | Angir", desc: "All welding and metal fabrication services from Angir in Brooklyn: railings, stairs, gates, fences, window guards, fire escapes, structural steel, rolling gates, stainless, mobile & emergency welding.", body, active: "services", og: "page:split", schema: [crumbs([["Home", "/"], ["Services", "/services/"]])] }));
 }
 
 // ── SERVICE PAGES
@@ -360,7 +367,7 @@ for (const s of services) {
     <div class="hero-cta"><a class="btn btn-red btn-lg" href="${tel}">${ICON.phone} Call ${esc(site.phoneDisplay)}</a><a class="btn btn-ghost btn-lg" href="#quote">Free quote ${ICON.arrow}</a></div>
     <ul class="badges"><li>${ICON.check} Measured on site</li><li>${ICON.check} Built in our Brooklyn shop</li><li>${ICON.check} Written quote first</li></ul>
   </div>
-  <div class="svc-hero-img">${pic(IMG.service(s), `${ALT[s.art]} — ${s.name.toLowerCase()} by Angir Welding & Fabrication, Brooklyn NY`, { eager: true })}</div>
+  <div class="svc-hero-img">${pic(s.slug, `${PH(s.slug).alt} — ${s.name.toLowerCase()}, Brooklyn NY`, { eager: true })}</div>
 </div></section>
 
 <div class="wrap svc-layout">
@@ -388,7 +395,7 @@ for (const s of services) {
 <section class="related"><div class="wrap"><div class="sec-head left"><p class="kicker">Related</p><h2>Often paired with</h2></div><div class="grid cards four">${s.related.map((r) => svc[r]).filter(Boolean).map((r) => card(r)).join("")}</div></div></section>`;
   const schema = [
     crumbs([["Home", "/"], ["Services", "/services/"], [s.name, url]]),
-    { "@context": "https://schema.org", "@type": "Service", name: s.name, serviceType: s.name, description: s.desc, url: abs(url), image: abs(IMG.service(s) + ".webp"), provider: { "@id": site.url + "/#business" }, areaServed: [{ "@type": "City", name: "Brooklyn" }, { "@type": "City", name: "New York" }], hasOfferCatalog: { "@type": "OfferCatalog", name: s.name, itemListElement: s.types.flatMap((t) => t.items).slice(0, 12).map((i) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name: i } })) } },
+    { "@context": "https://schema.org", "@type": "Service", name: s.name, serviceType: s.name, description: s.desc, url: abs(url), image: phUrl(PH(s.slug), 1600).startsWith("/") ? abs(phUrl(PH(s.slug), 1600)) : phUrl(PH(s.slug), 1600), provider: { "@id": site.url + "/#business" }, areaServed: [{ "@type": "City", name: "Brooklyn" }, { "@type": "City", name: "New York" }], hasOfferCatalog: { "@type": "OfferCatalog", name: s.name, itemListElement: s.types.flatMap((t) => t.items).slice(0, 12).map((i) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name: i } })) } },
     faqSchema(allFaqs),
   ];
   add(url, page({ url, title: s.title, desc: s.desc, body, active: "services", og: s.slug, schema }));
@@ -401,11 +408,11 @@ for (const s of services) {
 <section class="area-index"><div class="wrap">
   <div class="map-wrap"><iframe title="Map of Angir Welding & Fabrication in Dyker Heights, Brooklyn" src="https://www.google.com/maps?q=${encodeURIComponent(addr)}&z=12&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
   <h2>Brooklyn neighborhoods</h2>
-  <div class="grid area-cards">${brooklyn.map((l) => `<a class="area-card" href="/areas/${l.slug}/"><div class="card-img">${pic(IMG.area(l), `Welding and metal fabrication in ${l.name}, Brooklyn — ${l.name} streetscape illustration`, { sizes: "(max-width: 700px) 100vw, 25vw" })}</div><div class="card-b"><h3>${esc(l.name)}</h3><p>${esc(l.zip)} · ${l.top.slice(0, 3).map((t) => esc(svc[t].name)).join(", ")}</p></div></a>`).join("")}</div>
+  <div class="grid area-cards">${brooklyn.map((l) => `<a class="area-card" href="/areas/${l.slug}/"><div class="card-img">${pic(`area:${l.slug}`, `${PH("area:" + l.slug).alt} — welding & ironwork in ${l.name}, Brooklyn`, { sizes: "(max-width: 700px) 100vw, 25vw" })}</div><div class="card-b"><h3>${esc(l.name)}</h3><p>${esc(l.zip)} · ${l.top.slice(0, 3).map((t) => esc(svc[t].name)).join(", ")}</p></div></a>`).join("")}</div>
   <h2>Beyond Brooklyn</h2>
-  <div class="grid area-cards">${boroughs.map((l) => `<a class="area-card" href="/areas/${l.slug}/"><div class="card-img">${pic(IMG.area(l), `Welding and metal fabrication in ${l.name}, NY`, { sizes: "(max-width: 700px) 100vw, 25vw" })}</div><div class="card-b"><h3>${esc(l.name)}</h3><p>${l.top.slice(0, 3).map((t) => esc(svc[t].name)).join(", ")}</p></div></a>`).join("")}</div>
+  <div class="grid area-cards">${boroughs.map((l) => `<a class="area-card" href="/areas/${l.slug}/"><div class="card-img">${pic(`area:${l.slug}`, `${PH("area:" + l.slug).alt} — welding & ironwork in ${l.name}, NY`, { sizes: "(max-width: 700px) 100vw, 25vw" })}</div><div class="card-b"><h3>${esc(l.name)}</h3><p>${l.top.slice(0, 3).map((t) => esc(svc[t].name)).join(", ")}</p></div></a>`).join("")}</div>
 </div></section>`;
-  add("/areas/", page({ url: "/areas/", title: "Service Areas | Welder in Brooklyn, Staten Island, Queens & Manhattan | Angir", desc: "Angir Welding & Fabrication serves every Brooklyn neighborhood from our Dyker Heights shop, plus Staten Island, Queens and Manhattan. Find welding and ironwork near you.", body, active: "areas", og: "areas", schema: [crumbs([["Home", "/"], ["Service areas", "/areas/"]])] }));
+  add("/areas/", page({ url: "/areas/", title: "Service Areas | Welder in Brooklyn, Staten Island, Queens & Manhattan | Angir", desc: "Angir Welding & Fabrication serves every Brooklyn neighborhood from our Dyker Heights shop, plus Staten Island, Queens and Manhattan. Find welding and ironwork near you.", body, active: "areas", og: "area:bay-ridge", schema: [crumbs([["Home", "/"], ["Service areas", "/areas/"]])] }));
 }
 
 // ── AREA PAGES
@@ -429,7 +436,7 @@ for (const l of locations) {
     <p class="lede">${esc(l.blurb)}</p>
     <div class="hero-cta"><a class="btn btn-red btn-lg" href="${tel}">${ICON.phone} Call ${esc(site.phoneDisplay)}</a><a class="btn btn-ghost btn-lg" href="#quote">Free quote ${ICON.arrow}</a></div>
   </div>
-  <div class="svc-hero-img">${pic(IMG.area(l), `Welder and ironwork in ${place} — illustrated streetscape`, { eager: true })}</div>
+  <div class="svc-hero-img">${pic(`area:${l.slug}`, `${PH("area:" + l.slug).alt} — welding & metal fabrication in ${place}`, { eager: true })}</div>
 </div></section>
 
 <div class="wrap svc-layout">
@@ -446,15 +453,15 @@ for (const l of locations) {
 </div>`;
   const title = l.borough_page ? `Welder & Metal Fabrication in ${l.name}, NY | Angir Welding` : `Welder in ${l.name}, Brooklyn | Iron Railings, Gates & Welding | Angir`;
   const desc = `Welding and metal fabrication in ${place}: ${topS.slice(0, 4).map((s) => s.name.toLowerCase()).join(", ")} and mobile welding. Brooklyn shop on 81st St — call for a free quote.`;
-  add(url, page({ url, title, desc, body, active: "areas", og: `area-${l.slug}`, schema: [crumbs([["Home", "/"], ["Service areas", "/areas/"], [l.name, url]]), faqSchema(localFaqs)] }));
+  add(url, page({ url, title, desc, body, active: "areas", og: `area:${l.slug}`, schema: [crumbs([["Home", "/"], ["Service areas", "/areas/"], [l.name, url]]), faqSchema(localFaqs)] }));
 }
 
 // ── GUIDES
 {
   const body = `${crumbHtml([["Home", "/"], ["Guides", "/guides/"]])}
 <section class="page-hero"><div class="wrap"><p class="kicker">Guides</p><h1>Straight answers about <em>NYC metal work.</em></h1><p class="lede">Railing codes, fire escape inspections, window guard rules, storefront gate laws and what really drives the price — written by a Brooklyn shop.</p></div></section>
-<section><div class="wrap"><div class="grid cards">${guides.map((g) => `<a class="card" href="/guides/${g.slug}/"><div class="card-img">${pic(IMG.guide(g), ALT[g.art])}</div><div class="card-b"><p class="meta">${g.read} read</p><h2 class="h3">${esc(g.h1)}</h2><p>${esc(g.desc)}</p><span class="more">Read guide ${ICON.arrow}</span></div></a>`).join("")}</div></div></section>`;
-  add("/guides/", page({ url: "/guides/", title: "NYC Welding, Railing & Ironwork Guides | Angir Welding & Fabrication", desc: "Guides for NYC homeowners and businesses: railing height code, fire escape inspections, window guard law, storefront rolling gate rules, materials and pricing.", body, active: "guides", og: "guides", schema: [crumbs([["Home", "/"], ["Guides", "/guides/"]])] }));
+<section><div class="wrap"><div class="grid cards">${guides.map((g) => `<a class="card" href="/guides/${g.slug}/"><div class="card-img">${pic(`guide:${g.slug}`)}</div><div class="card-b"><p class="meta">${g.read} read</p><h2 class="h3">${esc(g.h1)}</h2><p>${esc(g.desc)}</p><span class="more">Read guide ${ICON.arrow}</span></div></a>`).join("")}</div></div></section>`;
+  add("/guides/", page({ url: "/guides/", title: "NYC Welding, Railing & Ironwork Guides | Angir Welding & Fabrication", desc: "Guides for NYC homeowners and businesses: railing height code, fire escape inspections, window guard law, storefront rolling gate rules, materials and pricing.", body, active: "guides", og: "guide:fire-escape-inspection-nyc", schema: [crumbs([["Home", "/"], ["Guides", "/guides/"]])] }));
 }
 for (const g of guides) {
   const url = `/guides/${g.slug}/`;
@@ -462,12 +469,12 @@ for (const g of guides) {
   const body = `${crumbHtml([["Home", "/"], ["Guides", "/guides/"], [g.h1, url]])}
 <article class="guide"><div class="wrap guide-in">
   <header class="guide-head"><p class="kicker">Guide · ${g.read} read</p><h1>${esc(g.h1)}</h1><p class="lede">${esc(g.desc)}</p></header>
-  <figure class="guide-fig">${pic(IMG.guide(g), ALT[g.art], { eager: true, sizes: "(max-width: 900px) 100vw, 900px" })}</figure>
+  <figure class="guide-fig">${pic(`guide:${g.slug}`, null, { eager: true, sizes: "(max-width: 900px) 100vw, 900px" })}</figure>
   <div class="guide-grid"><div class="prose guide-body">${html}<p class="disclaimer">This guide is general information, not legal or engineering advice. Requirements change and depend on your building — confirm with NYC DOB, the relevant agency, or your architect/engineer.</p></div>
   <aside class="guide-aside"><div class="sticky"><p class="aside-h">Related services</p><ul>${g.services.map((sl) => svc[sl]).map((s) => `<li><a href="/services/${s.slug}/">${esc(s.name)} ${ICON.arrow}</a></li>`).join("")}</ul><a class="btn btn-red btn-block" href="${tel}">${ICON.phone} ${esc(site.phoneDisplay)}</a><a class="btn btn-ghost btn-block" href="/contact/">Request a quote</a></div></aside></div>
 </div></article>`;
-  const schema = [crumbs([["Home", "/"], ["Guides", "/guides/"], [g.h1, url]]), { "@context": "https://schema.org", "@type": "Article", headline: g.title, description: g.desc, image: abs(IMG.guide(g) + ".webp"), author: { "@type": "Organization", name: site.name, url: site.url + "/" }, publisher: { "@id": site.url + "/#business" }, mainEntityOfPage: abs(url), datePublished: "2026-10-04", dateModified: "2026-10-04" }];
-  add(url, page({ url, title: g.title + " | Angir", desc: g.desc, body, active: "guides", og: `guide-${g.slug}`, type: "article", schema }));
+  const schema = [crumbs([["Home", "/"], ["Guides", "/guides/"], [g.h1, url]]), { "@context": "https://schema.org", "@type": "Article", headline: g.title, description: g.desc, image: phUrl(PH(`guide:${g.slug}`), 1600).startsWith("/") ? abs(phUrl(PH(`guide:${g.slug}`), 1600)) : phUrl(PH(`guide:${g.slug}`), 1600), author: { "@type": "Organization", name: site.name, url: site.url + "/" }, publisher: { "@id": site.url + "/#business" }, mainEntityOfPage: abs(url), datePublished: "2026-10-04", dateModified: "2026-10-04" }];
+  add(url, page({ url, title: g.title + " | Angir", desc: g.desc, body, active: "guides", og: `guide:${g.slug}`, type: "article", schema }));
 }
 
 // ── FAQ
@@ -477,7 +484,7 @@ for (const g of guides) {
 <section class="page-hero"><div class="wrap"><p class="kicker">FAQ</p><h1>Frequently asked <em>questions.</em></h1><p class="lede">Can't find your answer? Call or text ${esc(site.phoneDisplay)}.</p></div></section>
 <section><div class="wrap faq-page"><h2>General</h2>${faqList(faqs)}
 <h2>By service</h2>${GROUPS.map((g) => `<h3 class="faq-group">${esc(g.name)}</h3>${faqList(svcFaqs.filter((f) => f.s.group === g.id))}`).join("")}</div></section>`;
-  add("/faq/", page({ url: "/faq/", title: "Welding & Ironwork FAQ | Angir Welding & Fabrication Brooklyn", desc: "Answers about custom railings, gates, stairs, fire escapes, window guards, rolling gates, pricing, permits and mobile welding in Brooklyn and NYC.", body, active: "faq", og: "faq", schema: [crumbs([["Home", "/"], ["FAQ", "/faq/"]]), faqSchema([...faqs, ...svcFaqs])] }));
+  add("/faq/", page({ url: "/faq/", title: "Welding & Ironwork FAQ | Angir Welding & Fabrication Brooklyn", desc: "Answers about custom railings, gates, stairs, fire escapes, window guards, rolling gates, pricing, permits and mobile welding in Brooklyn and NYC.", body, active: "faq", og: "welding-repair", schema: [crumbs([["Home", "/"], ["FAQ", "/faq/"]]), faqSchema([...faqs, ...svcFaqs])] }));
 }
 
 // ── ABOUT
@@ -486,17 +493,17 @@ for (const g of guides) {
 <section class="svc-hero"><div class="wrap svc-hero-in">
   <div class="svc-hero-txt"><p class="kicker">About Angir</p><h1>A Brooklyn shop that <em>builds it and installs it.</em></h1>
   <p class="lede">Angir Welding &amp; Fabrication is a metal shop on 81st Street in Dyker Heights. We design, weld and install custom metal work for Brooklyn homes, buildings and businesses — and we fix what's broken.</p></div>
-  <div class="svc-hero-img">${pic(IMG.page("angir-welding-shop-dyker-heights-brooklyn"), ALT.workshop, { eager: true })}</div>
+  <div class="svc-hero-img">${pic("page:about", "Welder at work in a metal shop — Angir Welding & Fabrication, Dyker Heights", { eager: true })}</div>
 </div></section>
 <section class="why"><div class="wrap"><div class="grid three pillars">
   <article><span class="pillar-n">01</span><h3>Local</h3><p>We live and work in South Brooklyn. Our customers are our neighbors, so we do work we're proud to drive past.</p></article>
   <article><span class="pillar-n">02</span><h3>Hands-on</h3><p>The person who measures your job is the person who welds and installs it. Nothing is lost in translation.</p></article>
   <article><span class="pillar-n">03</span><h3>Versatile</h3><p>Stairs, railings, gates, fences, fire escapes, structural steel, stainless and aluminum — from a single hinge to a full staircase.</p></article>
 </div></div></section>
-<section class="split"><div class="wrap split-in"><div class="split-img">${pic(IMG.page("mobile-welding-truck-brooklyn"), ALT.truck)}</div>
+<section class="split"><div class="wrap split-in"><div class="split-img">${pic("page:about2", "Welder creating sparks — mobile welding across NYC")}</div>
 <div class="split-txt"><p class="kicker">Shop + mobile</p><h2>We come to you <em>when the metal can't move.</em></h2><p>Our self-powered mobile welding rig handles on-site repairs for gates, railings, fire escapes, storefront gates, trailers and job-site steel — anywhere in NYC.</p><a class="btn btn-dark" href="/services/mobile-welding/">Mobile welding ${ICON.arrow}</a></div></div></section>
 ${method(true)}`;
-  add("/about/", page({ url: "/about/", title: "About Angir Welding & Fabrication | Dyker Heights, Brooklyn Metal Shop", desc: "Angir Welding & Fabrication is a Dyker Heights, Brooklyn welding and metal fabrication shop building custom railings, gates, stairs and steel — and doing mobile welding across NYC.", body, active: "about", og: "about", schema: [crumbs([["Home", "/"], ["About", "/about/"]])] }));
+  add("/about/", page({ url: "/about/", title: "About Angir Welding & Fabrication | Dyker Heights, Brooklyn Metal Shop", desc: "Angir Welding & Fabrication is a Dyker Heights, Brooklyn welding and metal fabrication shop building custom railings, gates, stairs and steel — and doing mobile welding across NYC.", body, active: "about", og: "page:about", schema: [crumbs([["Home", "/"], ["About", "/about/"]])] }));
 }
 
 // ── CONTACT
@@ -514,7 +521,16 @@ ${method(true)}`;
   </div>
   <div id="quote">${quoteForm("")}</div>
 </div></section>`;
-  add("/contact/", page({ url: "/contact/", title: "Contact Angir Welding & Fabrication | Free Quote | Brooklyn, NY", desc: `Call or text ${site.phoneDisplay} for welding and metal fabrication in Brooklyn. Shop at ${addr}. Free quotes for railings, gates, stairs and repairs.`, body, active: "contact", og: "contact", schema: [crumbs([["Home", "/"], ["Contact", "/contact/"]])] }));
+  add("/contact/", page({ url: "/contact/", title: "Contact Angir Welding & Fabrication | Free Quote | Brooklyn, NY", desc: `Call or text ${site.phoneDisplay} for welding and metal fabrication in Brooklyn. Shop at ${addr}. Free quotes for railings, gates, stairs and repairs.`, body, active: "contact", og: "page:hero", schema: [crumbs([["Home", "/"], ["Contact", "/contact/"]])] }));
+}
+
+// ── PHOTO CREDITS
+{
+  const used = Object.values(photos);
+  const body = `${crumbHtml([["Home", "/"], ["Photo credits", "/credits/"]])}
+<section class="page-hero"><div class="wrap prose"><p class="kicker">Credits</p><h1>Photo <em>credits.</em></h1><p class="lede">Photography on this site is from <a href="https://unsplash.com/?utm_source=angir_welding&utm_medium=referral" rel="noopener">Unsplash</a>, used under the Unsplash License. Thank you to these photographers. Photos illustrate the type of work described and are not photos of specific Angir projects.</p>
+<ul class="credits">${[...new Map(used.map((p) => [p.un, p])).values()].map((p) => `<li><a href="https://unsplash.com/@${p.un}?utm_source=angir_welding&utm_medium=referral" rel="noopener">${esc(p.by)}</a></li>`).join("")}</ul></div></section>`;
+  add("/credits/", page({ url: "/credits/", title: "Photo Credits | Angir Welding & Fabrication", desc: "Photography credits for the Angir Welding & Fabrication website.", body }));
 }
 
 // ── PRIVACY + 404

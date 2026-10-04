@@ -13,15 +13,13 @@ The finished site is in **`docs/`** — plain HTML/CSS/JS, no framework, ready t
 | Services (index + 35 service landing pages) | 36 |
 | Service areas (index + 30 Brooklyn neighborhoods + Staten Island, Queens, Manhattan) | 34 |
 | Guides (index + 6 articles) | 7 |
-| About, Contact, FAQ, Privacy, 404 | 5 |
+| About, Contact, FAQ, Privacy, Photo credits, 404 | 6 |
 
 Every page has: unique title + meta description, canonical URL, Open Graph/Twitter image,
 LocalBusiness + Service/FAQ/Breadcrumb/Article schema (JSON-LD), and a quote form.
 `sitemap.xml`, `robots.txt`, favicon and web manifest are generated too.
 
-**Images:** 78 keyword-named illustrations in 3 sizes (`docs/assets/img/`) and social share cards
-(81 cards in `docs/assets/og/`) are generated from `src/art.mjs` in one consistent style (charcoal, steel, deep red, weld sparks).
-To swap in a real photo, save it as a 1600×1000 `.webp` with the **same file name** (plus the `-1200` and `-800` sizes).
+**Photos:** professional photography from Unsplash (free for commercial use under the Unsplash License), one hand-picked photo per service, neighborhood and guide — listed with keyword file names and alt text in `src/data/photos.mjs`. By default the site loads them from Unsplash's fast image CDN. Run `npm run photos` (needs internet) to download all of them into `docs/assets/photos/` under their keyword file names, then `npm run build` — the site switches to the local copies automatically. **Best for SEO:** replace them with real photos of Angir jobs — save yours as `FILE-800.webp`, `FILE-1200.webp`, `FILE-1600.webp` using the same file name and rebuild. Photographer credits are on `/credits/`.
 
 ## ⚠️ Fill these in before launch — `src/data/site.mjs`
 
@@ -36,7 +34,7 @@ Then rebuild:
 
 ```bash
 npm run build          # rebuilds all HTML into docs/ (no dependencies needed)
-npm install && npm run images   # only if you change art or add services/areas (needs sharp)
+npm run photos         # optional: download all photos locally with keyword file names
 ```
 
 ## Editing content
